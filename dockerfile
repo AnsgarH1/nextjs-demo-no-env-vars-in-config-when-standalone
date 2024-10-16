@@ -27,9 +27,6 @@ RUN --mount=type=cache,id=next,target=/root/.local/share/next pnpm run build
 # Step 3: Create the final runnable image
 FROM base AS prepare-node-server
 
-# Install envusbt, to use for workaround
-RUN apk add --no-cache envsubst jq
-
 WORKDIR /app
 
 ENV NODE_ENV production
@@ -40,10 +37,6 @@ RUN addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 nextjs
 COPY --from=build-next-app --chown=nextjs:nodejs app/.next/standalone/ ./
 COPY --from=build-next-app --chown=nextjs:nodejs app/.next/static .next/static
 
-# Copy entrypoint.sh and make it executable
-COPY --chown=nextjs:nodejs ./entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
-
 # Ensure nextjs user has read/write access to /app
 RUN chown -R nextjs:nodejs /app
 
@@ -53,4 +46,4 @@ EXPOSE 3000
 ENV PORT 3000
 
 # Set the entrypoint to the script
-ENTRYPOINT ["/entrypoint.sh"]
+CMD ["node", "server.js"]
