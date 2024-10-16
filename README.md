@@ -27,7 +27,21 @@ During build, (server) environment variables are not required. An Error gets onl
 
 ## How to reproduce
 
-The main branch contains the working solution with the workaround.
+The main branch contains the working solution with the workaround. Check out the "expected-behaviour" branch if you want to reproduce the broken state.
+
+You will need to copy the .env.example file to .env.local. This environment file also was added to the dockerignore, to exclude it from the docker build step, which should also be the case inside a CI/CD environment. 
+
+You can run the project locally with:
+- `pnpm install`
+- `pnpm dev`
+
+Or to run with docker:
+- `pnpm docker:build` and
+- `pnpm docker:run`
+  
+The running docker container should get mapped to [port 4000](http://localhost:4000) (to be reaally sure, that you don't accidentally open the parallel running next dev server inside the terminal you left open)
+
+The docker run job also parses the env file again, expose the variables to the container environment. Checkout the actual scripts inside the [package.json](package.json)
 
 Changes are made to following files:
 
@@ -44,7 +58,7 @@ process.env.NODE_ENV !== "production"
 ###  [dockerfile](dockerfile)
 
 - the envsubst package gets added to the container
-- the [entrypoint.sh] Script is used as the entrypoint instead of starting the node.js server directly
+- the entrypoint.sh Script is used as the entrypoint instead of starting the node.js server directly
 
 ### [entrypoint.sh](entrypoint.sh)
 
