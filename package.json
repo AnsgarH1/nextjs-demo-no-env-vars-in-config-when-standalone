@@ -5,8 +5,10 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
+    "start": "node .next/standalone/server.js",
+    "lint": "next lint",
+    "docker:build": "docker build -t environment-vars-in-config-demo .",
+    "docker:run": "docker run --env-file .env.local -p 4000:3000 environment-vars-in-config-demo"
   },
   "dependencies": {
     "react": "^18",

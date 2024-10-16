@@ -1,36 +1,52 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Next.js environment vars issue
 
-## Getting Started
+This repo demonstrates an issue with Next.js when trying to build and run a multi-environment  Docker Image using environment variables inside next.config.js. The specific issue stems from using environment variables inside the rewrite config, but likely applies to using environment variables inside next.config.js in general.
 
-First, run the development server:
+## Assumptions
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- Next.js is using the 'standalone' mode to run inside Docker
+- The docker image should be usable for multiple environments (dev, staging, prod):
+- Client-side environment variables (prefixed with NEXT_PUBLIC) can't be used, because they are evaluated during build.
+- All necessary configuration that is normally provided by client-side environment variables is replaced by server-side functionality (redirects/rewrites, server actions, etc).
+- There is no access to the specific environment variables for all stages beforehand, because they are injected into the dev / staging / prod environment by Kubernetes.
+
+## The problem
+
+During the build, the next.config.js gets serialized and an error is thrown if used environment variables are not provided.
+
+## Expected behavior
+
+During build, (server) environment variables are not required. An Error gets only thrown if client side environment variables are used and not provided.
+
+## The workaround:
+
+- Inside next.config.js, environment variables are only set during development, when building the Next.js app, they are replaced by a placeholder. 
+- The entrypoint of the docker image is not the start of the node server, but a bash script entrypoint.sh
+- The entrypoint script replaces the placeholders in all known files where they occur with the linux envsubst command.
+
+
+## How to reproduce
+
+The main branch contains the working solution with the workaround.
+
+Changes are made to following files:
+
+### [next.config.js](next.config.mjs)
+
+environment variables get replaced during build. 
+
+```js
+process.env.NODE_ENV !== "production"
+        ? `https://${process.env.IMGIX_URL}/:path*`
+        : `https://$IMGIX_URL/:path*`, 
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+###  [dockerfile](dockerfile)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- the envsubst package gets added to the container
+- the [entrypoint.sh] Script is used as the entrypoint instead of starting the node.js server directly
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### [entrypoint.sh](entrypoint.sh)
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- The placeholder environment variables are replaced with the correct values from the environment
+- Also add some pretty logging statements which changes where made to the files, to make sure everything has worked

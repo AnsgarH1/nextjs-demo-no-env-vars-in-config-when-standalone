@@ -1,6 +1,6 @@
 "use client";
 
-import { imgixLoader } from "@/util/imgixLoader";
+import { imgixLoader } from "@/imgixLoader";
 import styles from "./MyComponent.module.css";
 import Image from "next/image";
 

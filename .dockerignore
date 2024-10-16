@@ -1,0 +1,10 @@
+node_modules
+.git
+.gitignore
+*.md
+.husky
+
+.next
+
+# Not available in CI/CD, therefore not included in docker build here
+.env.local
